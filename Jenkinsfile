@@ -16,7 +16,7 @@ pipeline {
     string(
       name: 'API_PORT',
       defaultValue: '3003',
-      description: 'พอร์ตบน VPS ที่ map ไป container API (host:container → API_PORT:3003)'
+      description: 'พอร์ตบน host ที่ map ไป container API (host:container → API_PORT:3003)'
     )
     string(
       name: 'CORS_ORIGIN',
@@ -58,26 +58,6 @@ pipeline {
       defaultValue: 'CHicNaFWTEhJz0bT4O6xqDvX428f3J3bMi5giXWbSqU',
       description: 'JWT secret สำหรับเซ็น token (จำเป็นต้องใส่)'
     )
-    string(
-      name: 'JENKINS_BASE_URL',
-      defaultValue: 'http://187.52.125.210:8080',
-      description: 'Jenkins base URL สำหรับ CI-CD proxy'
-    )
-    string(
-      name: 'JENKINS_USER',
-      defaultValue: 'not778',
-      description: 'Jenkins user'
-    )
-    password(
-      name: 'JENKINS_API_TOKEN',
-      defaultValue: '11575f6e0b5e1984ca20bd62f14f2a148c',
-      description: 'Jenkins API token'
-    )
-    password(
-      name: 'HOSTINGER_API_TOKEN',
-      defaultValue: 'TC2kJIkXqMFpmNPcIQVCmS2iKRtScXP7ArP5GNIT58f1a721',
-      description: 'Hostinger API token สำหรับหน้า VPS (จาก hPanel → API)'
-    )
   }
 
   environment {
@@ -93,10 +73,6 @@ pipeline {
     DB_PASS = "${params.DB_PASS}"
     DB_NAME = "${params.DB_NAME}"
     JWT_SECRET = "${params.JWT_SECRET}"
-    JENKINS_BASE_URL = "${params.JENKINS_BASE_URL}"
-    JENKINS_USER = "${params.JENKINS_USER}"
-    JENKINS_API_TOKEN = "${params.JENKINS_API_TOKEN}"
-    HOSTINGER_API_TOKEN = "${params.HOSTINGER_API_TOKEN}"
   }
 
   stages {
@@ -143,10 +119,6 @@ pipeline {
           export DB_PASS="${DB_PASS}"
           export DB_NAME="${DB_NAME}"
           export JWT_SECRET="${JWT_SECRET}"
-          export JENKINS_BASE_URL="${JENKINS_BASE_URL}"
-          export JENKINS_USER="${JENKINS_USER}"
-          export JENKINS_API_TOKEN="${JENKINS_API_TOKEN}"
-          export HOSTINGER_API_TOKEN="${HOSTINGER_API_TOKEN}"
           docker compose build api
         '''
       }
@@ -169,10 +141,6 @@ pipeline {
           export DB_PASS="${DB_PASS}"
           export DB_NAME="${DB_NAME}"
           export JWT_SECRET="${JWT_SECRET}"
-          export JENKINS_BASE_URL="${JENKINS_BASE_URL}"
-          export JENKINS_USER="${JENKINS_USER}"
-          export JENKINS_API_TOKEN="${JENKINS_API_TOKEN}"
-          export HOSTINGER_API_TOKEN="${HOSTINGER_API_TOKEN}"
           docker compose up -d --remove-orphans api
         '''
       }

@@ -6,14 +6,6 @@ import authRouter from "./routes/auth.route";
 import adminsRouter from "./routes/admins.route";
 import adminLogRouter from "./routes/admin_log.route";
 import adminMenuRouter from "./routes/admin_menu.route";
-import portsRouter from "./routes/ports.route";
-import projectsRouter from "./routes/projects.route";
-import resourceTypesRouter from "./routes/resource_types.route";
-import allDatabaseRouter from "./routes/all_database.route";
-import databasesRouter from "./routes/databases.route";
-import ciCdRouter from "./routes/ci_cd.route";
-import vpsRouter from "./routes/vps.route";
-import domainRouter from "./routes/domain.route";
 
 dotenv.config();
 
@@ -46,14 +38,6 @@ app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/admins`, adminsRouter);
 app.use(`${API_PREFIX}/admin-log`, adminLogRouter);
 app.use(`${API_PREFIX}/admin-menu`, adminMenuRouter);
-app.use(`${API_PREFIX}/ports`, portsRouter);
-app.use(`${API_PREFIX}/projects`, projectsRouter);
-app.use(`${API_PREFIX}/resource-types`, resourceTypesRouter);
-app.use(`${API_PREFIX}/all-database`, allDatabaseRouter);
-app.use(`${API_PREFIX}/databases`, databasesRouter);
-app.use(`${API_PREFIX}/ci-cd`, ciCdRouter);
-app.use(`${API_PREFIX}/vps`, vpsRouter);
-app.use(`${API_PREFIX}/domains`, domainRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 
