@@ -172,8 +172,9 @@ SELECT seed.code, seed.name, TRUE, seed.sort_order
 FROM (
   VALUES
     ('dashboard', 'Dashboard', 1),
-    ('management', 'Management', 2),
-    ('logs', 'Logs', 3)
+    ('content', 'Content', 2),
+    ('management', 'Management', 3),
+    ('logs', 'Logs', 4)
 ) AS seed(code, name, sort_order)
 WHERE NOT EXISTS (
   SELECT 1
@@ -228,6 +229,11 @@ FROM (
   VALUES
     ('dashboard', 'overview', 'Overview', 1),
     ('dashboard', 'bi', 'BI', 2),
+    ('content', 'home-banners', 'Home Banners', 1),
+    ('content', 'skills', 'Skills', 2),
+    ('content', 'projects', 'Projects', 3),
+    ('content', 'experiences', 'Experiences', 4),
+    ('content', 'education', 'Education', 5),
     ('management', 'admins', 'Admins', 1),
     ('logs', 'logs', 'Logs', 1)
 ) AS seed(label_code, code, name, sort_order)
@@ -338,6 +344,31 @@ FROM (
   VALUES
     ('overview', 'view'),
     ('bi', 'view'),
+    ('home-banners', 'view'),
+    ('home-banners', 'add'),
+    ('home-banners', 'edit'),
+    ('home-banners', 'delete'),
+    ('home-banners', 'export'),
+    ('skills', 'view'),
+    ('skills', 'add'),
+    ('skills', 'edit'),
+    ('skills', 'delete'),
+    ('skills', 'export'),
+    ('projects', 'view'),
+    ('projects', 'add'),
+    ('projects', 'edit'),
+    ('projects', 'delete'),
+    ('projects', 'export'),
+    ('experiences', 'view'),
+    ('experiences', 'add'),
+    ('experiences', 'edit'),
+    ('experiences', 'delete'),
+    ('experiences', 'export'),
+    ('education', 'view'),
+    ('education', 'add'),
+    ('education', 'edit'),
+    ('education', 'delete'),
+    ('education', 'export'),
     ('admins', 'view'),
     ('admins', 'add'),
     ('admins', 'edit'),

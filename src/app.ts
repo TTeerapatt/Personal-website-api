@@ -6,6 +6,11 @@ import authRouter from "./routes/auth.route";
 import adminsRouter from "./routes/admins.route";
 import adminLogRouter from "./routes/admin_log.route";
 import adminMenuRouter from "./routes/admin_menu.route";
+import homeBannersRouter from "./routes/home_banners.route";
+import skillsRouter from "./routes/skills.route";
+import projectsRouter from "./routes/projects.route";
+import experiencesRouter from "./routes/experiences.route";
+import educationRouter from "./routes/education.route";
 
 dotenv.config();
 
@@ -38,6 +43,11 @@ app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/admins`, adminsRouter);
 app.use(`${API_PREFIX}/admin-log`, adminLogRouter);
 app.use(`${API_PREFIX}/admin-menu`, adminMenuRouter);
+app.use(`${API_PREFIX}/home-banners`, homeBannersRouter);
+app.use(`${API_PREFIX}/skills`, skillsRouter);
+app.use(`${API_PREFIX}/projects`, projectsRouter);
+app.use(`${API_PREFIX}/experiences`, experiencesRouter);
+app.use(`${API_PREFIX}/education`, educationRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 
