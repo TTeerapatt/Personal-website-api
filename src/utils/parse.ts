@@ -1,4 +1,4 @@
-export const MEDIA_TYPES = ["image", "video", "icon"] as const;
+export const MEDIA_TYPES = ["image", "video"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 export function toPositiveInt(value: unknown): number | null {

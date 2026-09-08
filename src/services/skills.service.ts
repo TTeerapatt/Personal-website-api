@@ -8,7 +8,6 @@ import {
   parseRequiredBoolean,
   parseRequiredString,
   toPositiveInt,
-  toTrimmedString,
   type MediaType,
 } from "../utils/parse";
 
@@ -25,7 +24,6 @@ export class SkillError extends Error {
 export interface Skill {
   id: number;
   name: string;
-  category: string;
   media_type: MediaType;
   url: string;
   display_order: number;
@@ -36,12 +34,10 @@ export interface Skill {
 
 export interface ListSkillsFilter {
   is_active?: boolean;
-  category?: string;
 }
 
 export interface CreateSkillInput {
   name?: unknown;
-  category?: unknown;
   media_type?: unknown;
   url?: unknown;
   display_order?: unknown;
@@ -51,7 +47,6 @@ export interface CreateSkillInput {
 
 export interface UpdateSkillInput {
   name?: unknown;
-  category?: unknown;
   media_type?: unknown;
   url?: unknown;
   display_order?: unknown;
@@ -62,7 +57,6 @@ export interface UpdateSkillInput {
 const SELECT_COLUMNS = `
   id,
   name,
-  category,
   media_type,
   url,
   display_order,
@@ -70,6 +64,8 @@ const SELECT_COLUMNS = `
   created_at,
   updated_at
 `;
+
+const SKILL_MEDIA_TYPES = ["image"] as const;
 
 function fail(result: { ok: false; message: string }): never {
   throw new SkillError(400, result.message);
@@ -81,9 +77,20 @@ function isPgError(error: unknown): error is { code: string } {
 
 function rethrowSkillDbError(error: unknown): never {
   if (isPgError(error) && error.code === "23505") {
-    throw new SkillError(409, "Skill already exists in this category");
+    throw new SkillError(409, "Skill already exists");
   }
   throw error;
+}
+
+async function getNextDisplayOrder(client: PoolClient): Promise<number> {
+  const result = await client.query<{ next: number }>(
+    `
+      SELECT COALESCE(MAX(display_order), -1) + 1 AS next
+      FROM skills
+      WHERE deleted_at IS NULL
+    `
+  );
+  return Number(result.rows[0]?.next ?? 0);
 }
 
 async function getByIdForUpdate(
@@ -119,17 +126,12 @@ export async function getSkills(
     conditions.push(`is_active = $${params.length}`);
   }
 
-  if (filter.category !== undefined) {
-    params.push(filter.category);
-    conditions.push(`category = $${params.length}`);
-  }
-
   const result = await pool.query<Skill>(
     `
       SELECT ${SELECT_COLUMNS}
       FROM skills
       WHERE ${conditions.join(" AND ")}
-      ORDER BY category ASC, display_order ASC, id ASC
+      ORDER BY display_order ASC, id ASC
     `,
     params
   );
@@ -155,19 +157,14 @@ export async function createSkill(input: CreateSkillInput): Promise<Skill> {
   const name = parseRequiredString(input.name, "name");
   if (!name.ok) fail(name);
 
-  const category = parseRequiredString(input.category, "category");
-  if (!category.ok) fail(category);
-
-  const mediaType = parseMediaType(input.media_type, "media_type", {
+  const mediaType = parseMediaType(input.media_type ?? "image", "media_type", {
     required: true,
+    allowed: SKILL_MEDIA_TYPES,
   });
   if (!mediaType.ok) fail(mediaType);
 
   const url = parseRequiredString(input.url, "url");
   if (!url.ok) fail(url);
-
-  const displayOrder = parseDisplayOrder(input.display_order, 0);
-  if (!displayOrder.ok) fail(displayOrder);
 
   let isActive = true;
   if (input.is_active !== undefined) {
@@ -180,22 +177,17 @@ export async function createSkill(input: CreateSkillInput): Promise<Skill> {
   try {
     await client.query("BEGIN");
 
+    const nextOrder = await getNextDisplayOrder(client);
+
     const inserted = await client.query<Skill>(
       `
         INSERT INTO skills (
-          name, category, media_type, url, display_order, is_active
+          name, media_type, url, display_order, is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING ${SELECT_COLUMNS}
       `,
-      [
-        name.value,
-        category.value,
-        mediaType.value,
-        url.value,
-        displayOrder.value,
-        isActive,
-      ]
+      [name.value, mediaType.value, url.value, nextOrder, isActive]
     );
 
     const row = inserted.rows[0];
@@ -236,17 +228,11 @@ export async function updateSkill(
       nextName = name.value;
     }
 
-    let nextCategory = existing.category;
-    if (input.category !== undefined) {
-      const category = parseRequiredString(input.category, "category");
-      if (!category.ok) fail(category);
-      nextCategory = category.value;
-    }
-
-    let nextMediaType: MediaType = existing.media_type;
+    let nextMediaType: MediaType = "image";
     if (input.media_type !== undefined) {
       const mediaType = parseMediaType(input.media_type, "media_type", {
         required: true,
+        allowed: SKILL_MEDIA_TYPES,
       });
       if (!mediaType.ok) fail(mediaType);
       nextMediaType = mediaType.value as MediaType;
@@ -280,11 +266,10 @@ export async function updateSkill(
       `
         UPDATE skills
         SET name = $2,
-            category = $3,
-            media_type = $4,
-            url = $5,
-            display_order = $6,
-            is_active = $7
+            media_type = $3,
+            url = $4,
+            display_order = $5,
+            is_active = $6
         WHERE id = $1
           AND deleted_at IS NULL
         RETURNING ${SELECT_COLUMNS}
@@ -292,7 +277,6 @@ export async function updateSkill(
       [
         id,
         nextName,
-        nextCategory,
         nextMediaType,
         nextUrl,
         nextDisplayOrder,
@@ -453,9 +437,84 @@ export async function hardDeleteSkill(
   }
 }
 
+export async function reorderSkills(
+  orderedIdsRaw: unknown,
+  adminId?: number | null
+): Promise<Skill[]> {
+  if (!Array.isArray(orderedIdsRaw) || orderedIdsRaw.length === 0) {
+    throw new SkillError(400, "ordered_ids is required");
+  }
+
+  const orderedIds: number[] = [];
+  const seen = new Set<number>();
+  for (const raw of orderedIdsRaw) {
+    const id = toPositiveInt(raw);
+    if (id === null) {
+      throw new SkillError(400, "ordered_ids contains an invalid id");
+    }
+    if (seen.has(id)) {
+      throw new SkillError(400, "ordered_ids must be unique");
+    }
+    seen.add(id);
+    orderedIds.push(id);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const existing = await client.query<{ id: number }>(
+      `
+        SELECT id
+        FROM skills
+        WHERE deleted_at IS NULL
+          AND id = ANY($1::bigint[])
+      `,
+      [orderedIds]
+    );
+
+    const existingIds = new Set(existing.rows.map((row) => Number(row.id)));
+    const validOrderedIds = orderedIds.filter((id) => existingIds.has(id));
+    if (validOrderedIds.length === 0) {
+      throw new SkillError(400, "No valid skills to reorder");
+    }
+
+    for (let index = 0; index < validOrderedIds.length; index += 1) {
+      await client.query(
+        `
+          UPDATE skills
+          SET display_order = $2
+          WHERE id = $1
+            AND deleted_at IS NULL
+        `,
+        [validOrderedIds[index], index]
+      );
+    }
+
+    await insertAdminLog(
+      {
+        adminId,
+        action: "update",
+        entityType: "skill",
+        entityId: null,
+        message: `Reordered ${validOrderedIds.length} skills`,
+      },
+      client
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return getSkills();
+}
+
 export function parseSkillListFilter(query: {
   is_active?: unknown;
-  category?: unknown;
 }): ListSkillsFilter {
   const filter: ListSkillsFilter = {};
 
@@ -466,13 +525,6 @@ export function parseSkillListFilter(query: {
     }
     if ("provided" in parsed && parsed.provided) {
       filter.is_active = parsed.value;
-    }
-  }
-
-  if (query.category !== undefined) {
-    const category = toTrimmedString(query.category);
-    if (category) {
-      filter.category = category;
     }
   }
 

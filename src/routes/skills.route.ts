@@ -4,6 +4,7 @@ import {
   getSkillByIdController,
   getSkillsController,
   hardDeleteSkillController,
+  reorderSkillsController,
   setSkillActiveController,
   softDeleteSkillController,
   updateSkillController,
@@ -30,6 +31,12 @@ skillsRouter.post(
   authMiddleware,
   requirePermission("skills", "add"),
   createSkillController
+);
+skillsRouter.put(
+  "/reorder",
+  authMiddleware,
+  requirePermission("skills", "edit"),
+  reorderSkillsController
 );
 skillsRouter.put(
   "/:id",

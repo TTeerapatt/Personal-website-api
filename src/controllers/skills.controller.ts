@@ -6,6 +6,7 @@ import {
   getSkills,
   hardDeleteSkill,
   parseSkillListFilter,
+  reorderSkills,
   setSkillActive,
   softDeleteSkill,
   updateSkill,
@@ -80,6 +81,22 @@ export async function createSkillController(
       adminId: req.admin?.adminId ?? null,
     });
     res.status(201).json({ success: true, data });
+  } catch (error) {
+    handleSkillError(error, res, next);
+  }
+}
+
+export async function reorderSkillsController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const data = await reorderSkills(
+      req.body?.ordered_ids,
+      req.admin?.adminId ?? null
+    );
+    res.status(200).json({ success: true, data });
   } catch (error) {
     handleSkillError(error, res, next);
   }
