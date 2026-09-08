@@ -1,9 +1,52 @@
--- Migration: 013_seed_content_menu
--- Seed Content menu label + tabs/actions for home-banners, skills, projects,
--- experiences, education. Also re-grant missing permissions to owner admins.
+-- Migration: 001_seed_content_menu
+-- 1) Seed owner admin account
+-- 2) Seed Content menu label + tabs/actions
+-- 3) Grant all menu actions to owner admins
+--
+-- Default owner credentials (change after first login if needed):
+--   email:    rznot778@gmail.com
+--   password: 0946987087Notkz_
 
 BEGIN;
 
+-- ---------------------------------------------------------------------------
+-- 1) admins (owner)
+-- ---------------------------------------------------------------------------
+INSERT INTO admins (email, display_name, role)
+SELECT seed.email, seed.display_name, seed.role
+FROM (
+  VALUES
+    ('rznot778@gmail.com', 'Owner', 'owner')
+) AS seed(email, display_name, role)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM admins a
+  WHERE a.email = seed.email
+    AND a.deleted_at IS NULL
+);
+
+-- ---------------------------------------------------------------------------
+-- 2) admin_auth (bcrypt hash of 0946987087Notkz_, rounds=10)
+-- ---------------------------------------------------------------------------
+INSERT INTO admin_auth (admin_id, password_hash)
+SELECT a.id, seed.password_hash
+FROM admins a
+CROSS JOIN (
+  VALUES
+    ('$2b$10$AzuI64bzZ..JJu7l4uXJ1eioEx/fQSz5k1B5vxnTvtLqnMFoXj1AG')
+) AS seed(password_hash)
+WHERE a.email = 'rznot778@gmail.com'
+  AND a.deleted_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM admin_auth aa
+    WHERE aa.admin_id = a.id
+      AND aa.deleted_at IS NULL
+  );
+
+-- ---------------------------------------------------------------------------
+-- 3) Content menu label
+-- ---------------------------------------------------------------------------
 INSERT INTO admin_menu_label (code, name, is_active, sort_order)
 SELECT seed.code, seed.name, TRUE, seed.sort_order
 FROM (
@@ -31,6 +74,9 @@ WHERE code = 'logs'
   AND deleted_at IS NULL
   AND sort_order <> 4;
 
+-- ---------------------------------------------------------------------------
+-- 4) Content menu tabs
+-- ---------------------------------------------------------------------------
 INSERT INTO admin_menu_tab (menu_label_id, code, name, is_active, sort_order)
 SELECT lbl.id, seed.code, seed.name, TRUE, seed.sort_order
 FROM (
@@ -51,6 +97,9 @@ WHERE NOT EXISTS (
     AND amt.deleted_at IS NULL
 );
 
+-- ---------------------------------------------------------------------------
+-- 5) Content tab ↔ actions
+-- ---------------------------------------------------------------------------
 INSERT INTO admin_menu_tab_action (menu_tab_id, permission_action_id)
 SELECT mt.id, pa.id
 FROM (
@@ -95,7 +144,9 @@ WHERE NOT EXISTS (
     AND mta.deleted_at IS NULL
 );
 
--- Grant new content tab actions to all active owners (idempotent)
+-- ---------------------------------------------------------------------------
+-- 6) Grant every active tab action to owner admins (idempotent)
+-- ---------------------------------------------------------------------------
 INSERT INTO admin_permissions (admin_id, menu_tab_action_id, is_allowed)
 SELECT a.id, mta.id, TRUE
 FROM admins a
@@ -106,9 +157,6 @@ INNER JOIN admin_menu_tab mt
 WHERE a.role = 'owner'
   AND a.deleted_at IS NULL
   AND mta.deleted_at IS NULL
-  AND mt.code IN (
-    'home-banners', 'skills', 'projects', 'experiences', 'education'
-  )
   AND NOT EXISTS (
     SELECT 1
     FROM admin_permissions ap
