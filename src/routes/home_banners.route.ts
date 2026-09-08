@@ -4,6 +4,7 @@ import {
   getHomeBannerByIdController,
   getHomeBannersController,
   hardDeleteHomeBannerController,
+  reorderHomeBannersController,
   setHomeBannerActiveController,
   softDeleteHomeBannerController,
   updateHomeBannerController,
@@ -30,6 +31,12 @@ homeBannersRouter.post(
   authMiddleware,
   requirePermission("home-banners", "add"),
   createHomeBannerController
+);
+homeBannersRouter.put(
+  "/reorder",
+  authMiddleware,
+  requirePermission("home-banners", "edit"),
+  reorderHomeBannersController
 );
 homeBannersRouter.put(
   "/:id",

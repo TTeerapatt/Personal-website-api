@@ -44,10 +44,16 @@ export function parseOptionalString(
 export function parseMediaType(
   value: unknown,
   field = "media_type",
-  options: { required: boolean; allowNull?: boolean } = { required: true }
+  options: {
+    required: boolean;
+    allowNull?: boolean;
+    allowed?: readonly MediaType[];
+  } = { required: true }
 ):
   | { ok: true; value: MediaType | null }
   | { ok: false; message: string } {
+  const allowed = options.allowed ?? MEDIA_TYPES;
+
   if (value === undefined || value === null || String(value).trim() === "") {
     if (options.required) {
       return { ok: false, message: `${field} is required` };
@@ -58,10 +64,10 @@ export function parseMediaType(
   }
 
   const raw = String(value).trim().toLowerCase();
-  if (!(MEDIA_TYPES as readonly string[]).includes(raw)) {
+  if (!(allowed as readonly string[]).includes(raw)) {
     return {
       ok: false,
-      message: `${field} must be one of: ${MEDIA_TYPES.join(", ")}`,
+      message: `${field} must be one of: ${allowed.join(", ")}`,
     };
   }
   return { ok: true, value: raw as MediaType };

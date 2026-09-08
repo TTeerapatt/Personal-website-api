@@ -133,6 +133,19 @@ export async function getActiveHomeBannerById(
   return result.rows[0] ?? null;
 }
 
+const HOME_BANNER_MEDIA_TYPES = ["image", "video"] as const;
+
+async function getNextDisplayOrder(client: PoolClient): Promise<number> {
+  const result = await client.query<{ next: number }>(
+    `
+      SELECT COALESCE(MAX(display_order), -1) + 1 AS next
+      FROM home_banners
+      WHERE deleted_at IS NULL
+    `
+  );
+  return Number(result.rows[0]?.next ?? 0);
+}
+
 export async function createHomeBanner(
   input: CreateHomeBannerInput
 ): Promise<HomeBanner> {
@@ -141,14 +154,12 @@ export async function createHomeBanner(
 
   const mediaType = parseMediaType(input.media_type, "media_type", {
     required: true,
+    allowed: HOME_BANNER_MEDIA_TYPES,
   });
   if (!mediaType.ok) fail(mediaType);
 
   const url = parseRequiredString(input.url, "url");
   if (!url.ok) fail(url);
-
-  const displayOrder = parseDisplayOrder(input.display_order, 0);
-  if (!displayOrder.ok) fail(displayOrder);
 
   let isActive = true;
   if (input.is_active !== undefined) {
@@ -161,6 +172,8 @@ export async function createHomeBanner(
   try {
     await client.query("BEGIN");
 
+    const nextOrder = await getNextDisplayOrder(client);
+
     const inserted = await client.query<HomeBanner>(
       `
         INSERT INTO home_banners (
@@ -169,7 +182,7 @@ export async function createHomeBanner(
         VALUES ($1, $2, $3, $4, $5)
         RETURNING ${SELECT_COLUMNS}
       `,
-      [name.value, mediaType.value, url.value, displayOrder.value, isActive]
+      [name.value, mediaType.value, url.value, nextOrder, isActive]
     );
 
     const row = inserted.rows[0];
@@ -214,6 +227,7 @@ export async function updateHomeBanner(
     if (input.media_type !== undefined) {
       const mediaType = parseMediaType(input.media_type, "media_type", {
         required: true,
+        allowed: HOME_BANNER_MEDIA_TYPES,
       });
       if (!mediaType.ok) fail(mediaType);
       nextMediaType = mediaType.value as MediaType;
@@ -409,6 +423,90 @@ export async function hardDeleteHomeBanner(
   } finally {
     client.release();
   }
+}
+
+export async function reorderHomeBanners(
+  orderedIdsRaw: unknown,
+  adminId?: number | null
+): Promise<HomeBanner[]> {
+  if (!Array.isArray(orderedIdsRaw) || orderedIdsRaw.length === 0) {
+    throw new HomeBannerError(400, "ordered_ids is required");
+  }
+
+  const orderedIds: number[] = [];
+  const seen = new Set<number>();
+  for (const raw of orderedIdsRaw) {
+    const id = toPositiveInt(raw);
+    if (id === null) {
+      throw new HomeBannerError(400, "ordered_ids contains an invalid id");
+    }
+    if (seen.has(id)) {
+      throw new HomeBannerError(400, "ordered_ids must be unique");
+    }
+    seen.add(id);
+    orderedIds.push(id);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const existing = await client.query<{ id: number }>(
+      `
+        SELECT id
+        FROM home_banners
+        WHERE deleted_at IS NULL
+        ORDER BY display_order ASC, id ASC
+      `
+    );
+    const existingIds = existing.rows.map((row) => Number(row.id));
+    const existingSet = new Set(existingIds);
+
+    const validOrderedIds = orderedIds.filter((id) => existingSet.has(id));
+    if (validOrderedIds.length === 0) {
+      throw new HomeBannerError(400, "No valid home banners to reorder");
+    }
+
+    // Keep any active banners missing from the payload at the end (stable).
+    const orderedSet = new Set(validOrderedIds);
+    for (const id of existingIds) {
+      if (!orderedSet.has(id)) {
+        validOrderedIds.push(id);
+      }
+    }
+
+    for (let index = 0; index < validOrderedIds.length; index += 1) {
+      await client.query(
+        `
+          UPDATE home_banners
+          SET display_order = $2
+          WHERE id = $1
+            AND deleted_at IS NULL
+        `,
+        [validOrderedIds[index], index]
+      );
+    }
+
+    await insertAdminLog(
+      {
+        adminId,
+        action: "update",
+        entityType: "home_banner",
+        entityId: null,
+        message: `Reordered ${validOrderedIds.length} home banners`,
+      },
+      client
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return getActiveHomeBanners();
 }
 
 export function parseHomeBannerListFilter(query: {

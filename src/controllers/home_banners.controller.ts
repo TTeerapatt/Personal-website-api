@@ -6,6 +6,7 @@ import {
   getActiveHomeBanners,
   hardDeleteHomeBanner,
   parseHomeBannerListFilter,
+  reorderHomeBanners,
   setHomeBannerActive,
   softDeleteHomeBanner,
   updateHomeBanner,
@@ -80,6 +81,22 @@ export async function createHomeBannerController(
       adminId: req.admin?.adminId ?? null,
     });
     res.status(201).json({ success: true, data });
+  } catch (error) {
+    handleHomeBannerError(error, res, next);
+  }
+}
+
+export async function reorderHomeBannersController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const data = await reorderHomeBanners(
+      req.body?.ordered_ids,
+      req.admin?.adminId ?? null
+    );
+    res.status(200).json({ success: true, data });
   } catch (error) {
     handleHomeBannerError(error, res, next);
   }
