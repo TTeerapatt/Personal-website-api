@@ -170,9 +170,6 @@ export async function createProject(
   const githubUrl = parseOptionalString(input.github_url);
   const demoUrl = parseOptionalString(input.demo_url);
 
-  const displayOrder = parseDisplayOrder(input.display_order, 0);
-  if (!displayOrder.ok) fail(displayOrder);
-
   let isActive = true;
   if (input.is_active !== undefined) {
     const parsed = parseRequiredBoolean(input.is_active, "is_active");
@@ -183,6 +180,15 @@ export async function createProject(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
+    const nextOrderResult = await client.query<{ next: number }>(
+      `
+        SELECT COALESCE(MAX(display_order), -1) + 1 AS next
+        FROM projects
+        WHERE deleted_at IS NULL
+      `
+    );
+    const nextOrder = Number(nextOrderResult.rows[0]?.next ?? 0);
 
     const inserted = await client.query<Project>(
       `
@@ -201,7 +207,7 @@ export async function createProject(
         thumbnailUrl.provided ? thumbnailUrl.value : null,
         githubUrl.provided ? githubUrl.value : null,
         demoUrl.provided ? demoUrl.value : null,
-        displayOrder.value,
+        nextOrder,
         isActive,
       ]
     );
