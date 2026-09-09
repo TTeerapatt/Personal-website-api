@@ -208,6 +208,7 @@ export async function createExperience(
   const mediaType = parseMediaType(input.media_type, "media_type", {
     required: false,
     allowNull: true,
+    allowed: ["image"],
   });
   if (!mediaType.ok) fail(mediaType);
 
@@ -339,6 +340,7 @@ export async function updateExperience(
       const mediaType = parseMediaType(input.media_type, "media_type", {
         required: false,
         allowNull: true,
+        allowed: ["image"],
       });
       if (!mediaType.ok) fail(mediaType);
       nextMediaType = mediaType.value;
