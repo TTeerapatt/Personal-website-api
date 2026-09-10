@@ -136,6 +136,8 @@ Personal-website-api/
 1. รัน `src/db/personal_website_table.sql`
 2. รัน `src/db/migrations/001_seed_content_menu.sql` (owner + เมนู Content + สิทธิ์)
 
+DB ที่มีอยู่แล้ว: รัน migration ตามลำดับใน `src/db/migrations/` (เช่น `004_website_visits.sql`)
+
 ### ตารางระบบ (admin)
 
 | ตาราง | ความหมาย |
@@ -154,6 +156,7 @@ Personal-website-api/
 | `projects` | ผลงาน/โปรเจกต์ | `name_th/en`, `description_th/en` (Rich Text → `TEXT`) |
 | `experiences` | ประวัติงาน | `name_th/en`, `description_th/en`, `position`, ช่วงวันที่ |
 | `education` | ประวัติการศึกษา | `name_th/en`, `description_th/en`, ช่วงวันที่ |
+| `website_visits` | ยอดเข้าชมรวมรายวัน (`visit_date` + `visit_count`) | ไม่เกี่ยวกับ i18n |
 
 `description_*` เก็บเป็น **string/HTML ใน `TEXT`** เพื่อรองรับ Rich Text Editor ฝั่ง admin  
 `media_type` ที่บังคับ/อนุญาต: `image` | `video` | `icon`  
@@ -189,7 +192,19 @@ Personal-website-api/
 | `/projects` | CRUD โปรเจกต์ |
 | `/experiences` | CRUD ประสบการณ์ |
 | `/education` | CRUD การศึกษา |
+| `/website-visits` | นับ/อ่านยอดเข้าชม (public สำหรับ landing) |
 | `/health` | health check (ไม่ต้อง auth) |
+
+### Website visits (public)
+
+| Method | Path | ความหมาย |
+|--------|------|----------|
+| `POST` | `/website-visits/track` | เพิ่มยอดวันนี้ (+1 หรือ `amount` 1–100) — ใช้ `CURRENT_DATE` ของ DB |
+| `GET` | `/website-visits/summary` | `{ total_visits, today_date, today_visits, day_count }` |
+| `GET` | `/website-visits?from=&to=` | รายการรายวัน (optional range `YYYY-MM-DD`) |
+| `GET` | `/website-visits/by-date/:date` | ยอดวันเดียว |
+
+ตารางนี้ไม่มี soft delete / ไม่ต้อง admin JWT (ไว้ให้ landing เรียก) — อย่าใช้ pattern นี้กับ content mutate
 
 ### CRUD มาตรฐานของคอนเทนต์
 

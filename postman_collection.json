@@ -1,12 +1,12 @@
 {
   "info": {
     "_postman_id": "0e6f6b70-2367-4b4d-a3c8-26a5e4dbb7ee",
-    "name": "Baan Laundry API",
-    "description": "Collection for Baan Laundry API endpoints.",
+    "name": "Personal Website API",
+    "description": "Collection for Personal Website API endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:3001/laundry/api" },
+    { "key": "base_url", "value": "http://localhost:3001/personal-website/api" },
     { "key": "token", "value": "" },
     { "key": "user_id", "value": "1" },
     { "key": "admin_id", "value": "1" },
@@ -918,6 +918,73 @@
               "raw": "{{base_url}}/admin-menu/tabs",
               "host": ["{{base_url}}"],
               "path": ["admin-menu", "tabs"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Website Visits",
+      "item": [
+        {
+          "name": "POST Track Visit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/website-visits/track",
+              "host": ["{{base_url}}"],
+              "path": ["website-visits", "track"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Visit Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/website-visits/summary",
+              "host": ["{{base_url}}"],
+              "path": ["website-visits", "summary"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Visits List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/website-visits?from=2026-01-01&to=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["website-visits"],
+              "query": [
+                { "key": "from", "value": "2026-01-01" },
+                { "key": "to", "value": "2026-12-31" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Visit By Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/website-visits/by-date/2026-09-10",
+              "host": ["{{base_url}}"],
+              "path": ["website-visits", "by-date", "2026-09-10"]
             }
           },
           "response": []
