@@ -157,6 +157,7 @@ DB ที่มีอยู่แล้ว: รัน migration ตามลำ�
 | `experiences` | ประวัติงาน | `name_th/en`, `description_th/en`, `position`, ช่วงวันที่ |
 | `education` | ประวัติการศึกษา | `name_th/en`, `description_th/en`, ช่วงวันที่ |
 | `website_visits` | ยอดเข้าชมรวมรายวัน (`visit_date` + `visit_count`) | ไม่เกี่ยวกับ i18n |
+| `site_settings` | ตั้งค่าทั้งไซต์ (singleton `id=1`) — สวิตช์ `show_*` section | — |
 
 `description_*` เก็บเป็น **string/HTML ใน `TEXT`** เพื่อรองรับ Rich Text Editor ฝั่ง admin  
 `media_type` ที่บังคับ/อนุญาต: `image` | `video` | `icon`  
@@ -193,6 +194,8 @@ DB ที่มีอยู่แล้ว: รัน migration ตามลำ�
 | `/experiences` | CRUD ประสบการณ์ |
 | `/education` | CRUD การศึกษา |
 | `/website-visits` | นับ/อ่านยอดเข้าชม (public สำหรับ landing) |
+| `/site-settings` | GET/PUT ตั้งค่าทั้งไซต์ (admin auth) |
+| `/public` | อ่านสาธารณะ เช่น `/public/site-settings` |
 | `/health` | health check (ไม่ต้อง auth) |
 
 ### Website visits (public)
@@ -205,6 +208,17 @@ DB ที่มีอยู่แล้ว: รัน migration ตามลำ�
 | `GET` | `/website-visits/by-date/:date` | ยอดวันเดียว |
 
 ตารางนี้ไม่มี soft delete / ไม่ต้อง admin JWT (ไว้ให้ landing เรียก) — อย่าใช้ pattern นี้กับ content mutate
+
+### Site settings
+
+| Method | Path | Auth | ความหมาย |
+|--------|------|------|----------|
+| `GET` | `/site-settings` | admin + `site-settings:view` | อ่านแถว singleton |
+| `PUT` | `/site-settings` | admin + `site-settings:edit` | อัปเดตสวิตช์ `show_*` |
+| `GET` | `/public/site-settings` | ไม่ต้อง | landing อ่านค่าเดียวกัน |
+
+`show_*` ที่มีตอนนี้: `show_banners`, `show_skills`, `show_projects`, `show_experiences`, `show_education`  
+เพิ่ม section ใหม่ในอนาคต → เพิ่มคอลัมน์ `show_<name>` + migration + อัปเดต API/admin/web
 
 ### CRUD มาตรฐานของคอนเทนต์
 
@@ -220,7 +234,7 @@ DB ที่มีอยู่แล้ว: รัน migration ตามลำ�
 | `DELETE` | `/:id` | soft delete (`deleted_at`, มักตั้ง `is_active=false`) |
 | `DELETE` | `/:id/hard` | hard delete |
 
-Permission tab codes: `home-banners`, `skills`, `projects`, `experiences`, `education`, `admins`, `logs`  
+Permission tab codes: `site-settings`, `home-banners`, `skills`, `projects`, `experiences`, `education`, `admins`, `logs`  
 `role === "owner"` bypass permission check
 
 ### Auth

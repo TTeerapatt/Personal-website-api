@@ -12,6 +12,8 @@ import projectsRouter from "./routes/projects.route";
 import experiencesRouter from "./routes/experiences.route";
 import educationRouter from "./routes/education.route";
 import websiteVisitsRouter from "./routes/website_visits.route";
+import siteSettingsRouter from "./routes/site_settings.route";
+import publicRouter from "./routes/public.route";
 import uploadRouter from "./routes/upload.route";
 
 dotenv.config();
@@ -51,6 +53,8 @@ app.use(`${API_PREFIX}/projects`, projectsRouter);
 app.use(`${API_PREFIX}/experiences`, experiencesRouter);
 app.use(`${API_PREFIX}/education`, educationRouter);
 app.use(`${API_PREFIX}/website-visits`, websiteVisitsRouter);
+app.use(`${API_PREFIX}/site-settings`, siteSettingsRouter);
+app.use(`${API_PREFIX}/public`, publicRouter);
 app.use(`${API_PREFIX}/upload`, uploadRouter);
 
 const PORT = Number(process.env.PORT) || 3001;

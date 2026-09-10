@@ -698,4 +698,40 @@ CREATE TRIGGER website_visits_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
+-- ---------------------------------------------------------------------------
+-- site_settings
+-- แถวเดียว (id = 1) — สวิตช์โชว์/ซ่อน section บน landing
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS site_settings (
+  id                 BIGINT PRIMARY KEY DEFAULT 1
+                       CHECK (id = 1),
+  show_banners       BOOLEAN      NOT NULL DEFAULT TRUE,
+  show_skills        BOOLEAN      NOT NULL DEFAULT TRUE,
+  show_projects      BOOLEAN      NOT NULL DEFAULT TRUE,
+  show_experiences   BOOLEAN      NOT NULL DEFAULT TRUE,
+  show_education     BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE  site_settings IS 'ตั้งค่าทั้งไซต์ (singleton id=1) — สวิตช์โชว์/ซ่อน section บน landing';
+COMMENT ON COLUMN site_settings.id IS 'PK — บังคับเป็น 1 เท่านั้น';
+COMMENT ON COLUMN site_settings.show_banners IS 'โชว์ section Home Banners บน landing';
+COMMENT ON COLUMN site_settings.show_skills IS 'โชว์ section Skills บน landing';
+COMMENT ON COLUMN site_settings.show_projects IS 'โชว์ section Projects บน landing';
+COMMENT ON COLUMN site_settings.show_experiences IS 'โชว์ section Experiences บน landing';
+COMMENT ON COLUMN site_settings.show_education IS 'โชว์ section Education บน landing';
+COMMENT ON COLUMN site_settings.created_at IS 'เวลาสร้าง';
+COMMENT ON COLUMN site_settings.updated_at IS 'เวลาแก้ไขล่าสุด';
+
+DROP TRIGGER IF EXISTS site_settings_set_updated_at ON site_settings;
+CREATE TRIGGER site_settings_set_updated_at
+  BEFORE UPDATE ON site_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+INSERT INTO site_settings (id)
+VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
 COMMIT;

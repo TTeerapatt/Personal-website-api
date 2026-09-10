@@ -990,6 +990,59 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Site Settings",
+      "item": [
+        {
+          "name": "GET Site Settings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/site-settings",
+              "host": ["{{base_url}}"],
+              "path": ["site-settings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Site Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"show_banners\": true,\n  \"show_skills\": true,\n  \"show_projects\": true,\n  \"show_experiences\": true,\n  \"show_education\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/site-settings",
+              "host": ["{{base_url}}"],
+              "path": ["site-settings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Public Site Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/public/site-settings",
+              "host": ["{{base_url}}"],
+              "path": ["public", "site-settings"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
