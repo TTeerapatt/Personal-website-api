@@ -50,13 +50,24 @@ function normalizeVisitDate(value: unknown): string {
   return String(value).slice(0, 10);
 }
 
+function toIsoTimestamp(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  const date = new Date(String(value));
+  if (!Number.isNaN(date.getTime())) {
+    return date.toISOString();
+  }
+  return String(value);
+}
+
 function mapVisitRow(row: Record<string, unknown>): WebsiteVisit {
   return {
     id: Number(row.id),
     visit_date: normalizeVisitDate(row.visit_date),
     visit_count: Number(row.visit_count),
-    created_at: String(row.created_at),
-    updated_at: String(row.updated_at),
+    created_at: toIsoTimestamp(row.created_at),
+    updated_at: toIsoTimestamp(row.updated_at),
   };
 }
 

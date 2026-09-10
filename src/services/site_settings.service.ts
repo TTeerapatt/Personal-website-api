@@ -55,9 +55,20 @@ function mapRow(row: Record<string, unknown>): SiteSettings {
     show_projects: Boolean(row.show_projects),
     show_experiences: Boolean(row.show_experiences),
     show_education: Boolean(row.show_education),
-    created_at: String(row.created_at),
-    updated_at: String(row.updated_at),
+    created_at: toIsoTimestamp(row.created_at),
+    updated_at: toIsoTimestamp(row.updated_at),
   };
+}
+
+function toIsoTimestamp(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  const date = new Date(String(value));
+  if (!Number.isNaN(date.getTime())) {
+    return date.toISOString();
+  }
+  return String(value);
 }
 
 function parseShowFlag(
