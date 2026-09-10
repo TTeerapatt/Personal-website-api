@@ -33,7 +33,10 @@
 - **Stack:** Express 5 + TypeScript + PostgreSQL (`pg`)
 - **Entry:** `src/app.ts` (listen ที่นี่ ไม่แยก `server.ts`)
 - **API prefix:** `/personal-website/api`
-- **พอร์ตเริ่มต้น:** `3001` (`PORT` จาก `.env`)
+- **พอร์ตเริ่มต้น (local):** `3001` (`PORT` จาก `.env`)
+- **พอร์ต Docker/Jenkins:** `3006` (ดู `Dockerfile` / `docker-compose.yml` / `Jenkinsfile`)
+- **Health:** `GET /personal-website/api/health`
+- **Upload volume (Docker):** `api_upload` → `/app/upload`
 - **Auth:** JWT Bearer ของ admin (`Authorization: Bearer <token>`)
 - **Static upload:** `/upload` → โฟลเดอร์ `upload/`
 - **Postman:** `postman_collection.json` ที่ root — แก้ endpoint แล้วควรอัปเดตไฟล์นี้ด้วย

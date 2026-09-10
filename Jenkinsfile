@@ -15,8 +15,8 @@ pipeline {
     )
     string(
       name: 'API_PORT',
-      defaultValue: '3003',
-      description: 'พอร์ตบน host ที่ map ไป container API (host:container → API_PORT:3003)'
+      defaultValue: '3006',
+      description: 'พอร์ตบน host ที่ map ไป container API (host:container → API_PORT:3006)'
     )
     string(
       name: 'CORS_ORIGIN',
@@ -25,12 +25,12 @@ pipeline {
     )
     string(
       name: 'DATABASE_URL',
-      defaultValue: 'postgres://postgres:0946987087Notkz%23@187.52.125.210:5432/nexus',
-      description: 'Connection string ของ PostgreSQL (ถ้า password มี # ให้ใส่เป็น %23)'
+      defaultValue: '',
+      description: 'Connection string ของ PostgreSQL (ถ้า password มี # ให้ใส่เป็น %23) — ถ้าว่างจะใช้ DB_*'
     )
     string(
       name: 'DB_HOST',
-      defaultValue: '187.52.125.210',
+      defaultValue: '',
       description: 'ใช้เมื่อไม่ใส่ DATABASE_URL'
     )
     string(
@@ -45,26 +45,26 @@ pipeline {
     )
     password(
       name: 'DB_PASS',
-      defaultValue: '0946987087Notkz#',
+      defaultValue: '',
       description: 'รหัสผ่าน Postgres (ใช้เมื่อไม่พึ่ง DATABASE_URL หรือเป็นค่าสำรอง)'
     )
     string(
       name: 'DB_NAME',
-      defaultValue: 'nexus',
+      defaultValue: 'personal_website',
       description: 'ชื่อ database'
     )
     password(
       name: 'JWT_SECRET',
-      defaultValue: 'CHicNaFWTEhJz0bT4O6xqDvX428f3J3bMi5giXWbSqU',
+      defaultValue: '',
       description: 'JWT secret สำหรับเซ็น token (จำเป็นต้องใส่)'
     )
   }
 
   environment {
-    COMPOSE_PROJECT_NAME = 'nexus-api'
-    IMAGE_NAME = 'nexus-api'
+    COMPOSE_PROJECT_NAME = 'personal-website-api'
+    IMAGE_NAME = 'personal-website-api'
     API_PORT = "${params.API_PORT}"
-    PORT = '3003'
+    PORT = '3006'
     CORS_ORIGIN = "${params.CORS_ORIGIN}"
     DATABASE_URL = "${params.DATABASE_URL}"
     DB_HOST = "${params.DB_HOST}"
@@ -92,14 +92,15 @@ pipeline {
           fi
 
           has_url=0
-          case "${DATABASE_URL}" in
-            ""|"postgres://postgres:CHANGE_ME@"*) has_url=0 ;;
-            *) has_url=1 ;;
-          esac
+          if [ -n "${DATABASE_URL}" ]; then
+            has_url=1
+          fi
 
-          if [ "${has_url}" -eq 0 ] && [ -z "${DB_PASS}" ]; then
-            echo "Provide a real DATABASE_URL (encode # as %23) or set DB_PASS"
-            exit 1
+          if [ "${has_url}" -eq 0 ]; then
+            if [ -z "${DB_HOST}" ] || [ -z "${DB_PASS}" ]; then
+              echo "Provide DATABASE_URL (encode # as %23) or set DB_HOST + DB_PASS"
+              exit 1
+            fi
           fi
         '''
       }
@@ -153,9 +154,9 @@ pipeline {
       steps {
         sh '''
           set -e
-          echo "Waiting for API on :${API_PORT}/nexus/api/health ..."
+          echo "Waiting for API on :${API_PORT}/personal-website/api/health ..."
           for i in $(seq 1 30); do
-            code="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${API_PORT}/nexus/api/health" || true)"
+            code="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${API_PORT}/personal-website/api/health" || true)"
             if echo "$code" | grep -Eq '^[123]'; then
               echo "API is healthy (HTTP $code)"
               exit 0
@@ -175,10 +176,10 @@ pipeline {
 
   post {
     success {
-      echo "nexus-api #${env.BUILD_NUMBER} succeeded → http://187.52.125.210:${params.API_PORT}/nexus/api/health"
+      echo "personal-website-api #${env.BUILD_NUMBER} succeeded → http://127.0.0.1:${params.API_PORT}/personal-website/api/health"
     }
     failure {
-      echo "nexus-api #${env.BUILD_NUMBER} failed"
+      echo "personal-website-api #${env.BUILD_NUMBER} failed"
       sh 'docker compose ps || true'
     }
   }
