@@ -6,6 +6,7 @@ import {
   getProjects,
   hardDeleteProject,
   parseProjectListFilter,
+  reorderProjects,
   setProjectActive,
   softDeleteProject,
   updateProject,
@@ -80,6 +81,22 @@ export async function createProjectController(
       adminId: req.admin?.adminId ?? null,
     });
     res.status(201).json({ success: true, data });
+  } catch (error) {
+    handleProjectError(error, res, next);
+  }
+}
+
+export async function reorderProjectsController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const data = await reorderProjects(
+      req.body?.ordered_ids,
+      req.admin?.adminId ?? null
+    );
+    res.status(200).json({ success: true, data });
   } catch (error) {
     handleProjectError(error, res, next);
   }

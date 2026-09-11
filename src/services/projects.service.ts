@@ -487,6 +487,82 @@ export async function hardDeleteProject(
   }
 }
 
+export async function reorderProjects(
+  orderedIdsRaw: unknown,
+  adminId?: number | null
+): Promise<Project[]> {
+  if (!Array.isArray(orderedIdsRaw) || orderedIdsRaw.length === 0) {
+    throw new ProjectError(400, "ordered_ids is required");
+  }
+
+  const orderedIds: number[] = [];
+  const seen = new Set<number>();
+  for (const raw of orderedIdsRaw) {
+    const id = toPositiveInt(raw);
+    if (id === null) {
+      throw new ProjectError(400, "ordered_ids contains an invalid id");
+    }
+    if (seen.has(id)) {
+      throw new ProjectError(400, "ordered_ids must be unique");
+    }
+    seen.add(id);
+    orderedIds.push(id);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const existing = await client.query<{ id: number }>(
+      `
+        SELECT id
+        FROM projects
+        WHERE deleted_at IS NULL
+          AND id = ANY($1::bigint[])
+      `,
+      [orderedIds]
+    );
+
+    const existingIds = new Set(existing.rows.map((row) => Number(row.id)));
+    const validOrderedIds = orderedIds.filter((id) => existingIds.has(id));
+    if (validOrderedIds.length === 0) {
+      throw new ProjectError(400, "No valid projects to reorder");
+    }
+
+    for (let index = 0; index < validOrderedIds.length; index += 1) {
+      await client.query(
+        `
+          UPDATE projects
+          SET display_order = $2
+          WHERE id = $1
+            AND deleted_at IS NULL
+        `,
+        [validOrderedIds[index], index]
+      );
+    }
+
+    await insertAdminLog(
+      {
+        adminId,
+        action: "update",
+        entityType: "project",
+        entityId: null,
+        message: `Reordered ${validOrderedIds.length} projects`,
+      },
+      client
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return getProjects();
+}
+
 export function parseProjectListFilter(query: {
   is_active?: unknown;
 }): ListProjectsFilter {

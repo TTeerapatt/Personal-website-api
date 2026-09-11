@@ -579,6 +579,7 @@ CREATE TABLE IF NOT EXISTS experiences (
   media_type       VARCHAR(32)
                      CHECK (media_type IS NULL OR media_type IN ('image', 'video')),
   url              TEXT,
+  display_order    INTEGER      NOT NULL DEFAULT 0,
   is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -598,13 +599,14 @@ COMMENT ON COLUMN experiences.start_date IS 'วันเริ่มงาน';
 COMMENT ON COLUMN experiences.end_date IS 'วันสิ้นสุดงาน — NULL = ปัจจุบัน';
 COMMENT ON COLUMN experiences.media_type IS 'ชนิดสื่อโลโก้: image | video (nullable)';
 COMMENT ON COLUMN experiences.url IS 'URL โลโก้ / สื่อ (nullable)';
+COMMENT ON COLUMN experiences.display_order IS 'ลำดับการแสดงผล (น้อย = ก่อน)';
 COMMENT ON COLUMN experiences.is_active IS 'สถานะเปิดใช้งาน';
 COMMENT ON COLUMN experiences.created_at IS 'เวลาสร้าง';
 COMMENT ON COLUMN experiences.updated_at IS 'เวลาแก้ไขล่าสุด';
 COMMENT ON COLUMN experiences.deleted_at IS 'NULL = ยังใช้, มีค่า = soft delete';
 
-CREATE INDEX IF NOT EXISTS experiences_start_date_active_idx
-  ON experiences (start_date DESC, id)
+CREATE INDEX IF NOT EXISTS experiences_display_order_active_idx
+  ON experiences (display_order, id)
   WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS experiences_is_active_idx
@@ -631,6 +633,7 @@ CREATE TABLE IF NOT EXISTS education (
   media_type       VARCHAR(32)
                      CHECK (media_type IS NULL OR media_type IN ('image', 'video')),
   url              TEXT,
+  display_order    INTEGER      NOT NULL DEFAULT 0,
   is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -649,13 +652,14 @@ COMMENT ON COLUMN education.start_date IS 'วันเริ่มศึกษ�
 COMMENT ON COLUMN education.end_date IS 'วันจบการศึกษา — NULL = กำลังศึกษา';
 COMMENT ON COLUMN education.media_type IS 'ชนิดสื่อโลโก้: image | video (nullable)';
 COMMENT ON COLUMN education.url IS 'URL โลโก้ / สื่อ (nullable)';
+COMMENT ON COLUMN education.display_order IS 'ลำดับการแสดงผล (น้อย = ก่อน)';
 COMMENT ON COLUMN education.is_active IS 'สถานะเปิดใช้งาน';
 COMMENT ON COLUMN education.created_at IS 'เวลาสร้าง';
 COMMENT ON COLUMN education.updated_at IS 'เวลาแก้ไขล่าสุด';
 COMMENT ON COLUMN education.deleted_at IS 'NULL = ยังใช้, มีค่า = soft delete';
 
-CREATE INDEX IF NOT EXISTS education_start_date_active_idx
-  ON education (start_date DESC, id)
+CREATE INDEX IF NOT EXISTS education_display_order_active_idx
+  ON education (display_order, id)
   WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS education_is_active_idx

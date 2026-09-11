@@ -4,6 +4,7 @@ import {
   getExperienceByIdController,
   getExperiencesController,
   hardDeleteExperienceController,
+  reorderExperiencesController,
   setExperienceActiveController,
   softDeleteExperienceController,
   updateExperienceController,
@@ -30,6 +31,12 @@ experiencesRouter.post(
   authMiddleware,
   requirePermission("experiences", "add"),
   createExperienceController
+);
+experiencesRouter.put(
+  "/reorder",
+  authMiddleware,
+  requirePermission("experiences", "edit"),
+  reorderExperiencesController
 );
 experiencesRouter.put(
   "/:id",

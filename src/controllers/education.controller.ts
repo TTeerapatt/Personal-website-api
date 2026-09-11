@@ -6,6 +6,7 @@ import {
   getEducationList,
   hardDeleteEducation,
   parseEducationListFilter,
+  reorderEducation,
   setEducationActive,
   softDeleteEducation,
   updateEducation,
@@ -80,6 +81,22 @@ export async function createEducationController(
       adminId: req.admin?.adminId ?? null,
     });
     res.status(201).json({ success: true, data });
+  } catch (error) {
+    handleEducationError(error, res, next);
+  }
+}
+
+export async function reorderEducationController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const data = await reorderEducation(
+      req.body?.ordered_ids,
+      req.admin?.adminId ?? null
+    );
+    res.status(200).json({ success: true, data });
   } catch (error) {
     handleEducationError(error, res, next);
   }

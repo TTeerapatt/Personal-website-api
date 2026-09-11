@@ -6,6 +6,7 @@ import {
   getExperiences,
   hardDeleteExperience,
   parseExperienceListFilter,
+  reorderExperiences,
   setExperienceActive,
   softDeleteExperience,
   updateExperience,
@@ -80,6 +81,22 @@ export async function createExperienceController(
       adminId: req.admin?.adminId ?? null,
     });
     res.status(201).json({ success: true, data });
+  } catch (error) {
+    handleExperienceError(error, res, next);
+  }
+}
+
+export async function reorderExperiencesController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const data = await reorderExperiences(
+      req.body?.ordered_ids,
+      req.admin?.adminId ?? null
+    );
+    res.status(200).json({ success: true, data });
   } catch (error) {
     handleExperienceError(error, res, next);
   }

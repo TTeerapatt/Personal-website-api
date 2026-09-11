@@ -4,6 +4,7 @@ import {
   getEducationByIdController,
   getEducationListController,
   hardDeleteEducationController,
+  reorderEducationController,
   setEducationActiveController,
   softDeleteEducationController,
   updateEducationController,
@@ -30,6 +31,12 @@ educationRouter.post(
   authMiddleware,
   requirePermission("education", "add"),
   createEducationController
+);
+educationRouter.put(
+  "/reorder",
+  authMiddleware,
+  requirePermission("education", "edit"),
+  reorderEducationController
 );
 educationRouter.put(
   "/:id",

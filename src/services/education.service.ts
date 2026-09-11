@@ -32,6 +32,7 @@ export interface Education {
   end_date: string | null;
   media_type: MediaType | null;
   url: string | null;
+  display_order: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -77,6 +78,7 @@ const SELECT_COLUMNS = `
   end_date,
   media_type,
   url,
+  display_order,
   is_active,
   created_at,
   updated_at
@@ -150,7 +152,7 @@ export async function getEducationList(
       SELECT ${SELECT_COLUMNS}
       FROM education
       WHERE ${conditions.join(" AND ")}
-      ORDER BY start_date DESC, id DESC
+      ORDER BY display_order ASC, id ASC
     `,
     params
   );
@@ -218,13 +220,22 @@ export async function createEducation(
   try {
     await client.query("BEGIN");
 
+    const nextOrderResult = await client.query<{ next: number }>(
+      `
+        SELECT COALESCE(MAX(display_order), -1) + 1 AS next
+        FROM education
+        WHERE deleted_at IS NULL
+      `
+    );
+    const nextOrder = Number(nextOrderResult.rows[0]?.next ?? 0);
+
     const inserted = await client.query<Education>(
       `
         INSERT INTO education (
           name_th, name_en, description_th, description_en,
-          start_date, end_date, media_type, url, is_active
+          start_date, end_date, media_type, url, display_order, is_active
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING ${SELECT_COLUMNS}
       `,
       [
@@ -236,6 +247,7 @@ export async function createEducation(
         endDate.value,
         mediaType.value,
         url.provided ? url.value : null,
+        nextOrder,
         isActive,
       ]
     );
@@ -525,6 +537,82 @@ export async function hardDeleteEducation(
   } finally {
     client.release();
   }
+}
+
+export async function reorderEducation(
+  orderedIdsRaw: unknown,
+  adminId?: number | null
+): Promise<Education[]> {
+  if (!Array.isArray(orderedIdsRaw) || orderedIdsRaw.length === 0) {
+    throw new EducationError(400, "ordered_ids is required");
+  }
+
+  const orderedIds: number[] = [];
+  const seen = new Set<number>();
+  for (const raw of orderedIdsRaw) {
+    const id = toPositiveInt(raw);
+    if (id === null) {
+      throw new EducationError(400, "ordered_ids contains an invalid id");
+    }
+    if (seen.has(id)) {
+      throw new EducationError(400, "ordered_ids must be unique");
+    }
+    seen.add(id);
+    orderedIds.push(id);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const existing = await client.query<{ id: number }>(
+      `
+        SELECT id
+        FROM education
+        WHERE deleted_at IS NULL
+          AND id = ANY($1::bigint[])
+      `,
+      [orderedIds]
+    );
+
+    const existingIds = new Set(existing.rows.map((row) => Number(row.id)));
+    const validOrderedIds = orderedIds.filter((id) => existingIds.has(id));
+    if (validOrderedIds.length === 0) {
+      throw new EducationError(400, "No valid education to reorder");
+    }
+
+    for (let index = 0; index < validOrderedIds.length; index += 1) {
+      await client.query(
+        `
+          UPDATE education
+          SET display_order = $2
+          WHERE id = $1
+            AND deleted_at IS NULL
+        `,
+        [validOrderedIds[index], index]
+      );
+    }
+
+    await insertAdminLog(
+      {
+        adminId,
+        action: "update",
+        entityType: "education",
+        entityId: null,
+        message: `Reordered ${validOrderedIds.length} education`,
+      },
+      client
+    );
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return getEducationList();
 }
 
 export function parseEducationListFilter(query: {

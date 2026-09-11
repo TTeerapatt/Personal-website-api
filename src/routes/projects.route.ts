@@ -4,6 +4,7 @@ import {
   getProjectByIdController,
   getProjectsController,
   hardDeleteProjectController,
+  reorderProjectsController,
   setProjectActiveController,
   softDeleteProjectController,
   updateProjectController,
@@ -30,6 +31,12 @@ projectsRouter.post(
   authMiddleware,
   requirePermission("projects", "add"),
   createProjectController
+);
+projectsRouter.put(
+  "/reorder",
+  authMiddleware,
+  requirePermission("projects", "edit"),
+  reorderProjectsController
 );
 projectsRouter.put(
   "/:id",
