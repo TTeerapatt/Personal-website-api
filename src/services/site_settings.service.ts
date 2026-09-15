@@ -15,6 +15,7 @@ export class SiteSettingsError extends Error {
 export interface SiteSettings {
   id: number;
   show_banners: boolean;
+  show_about_me: boolean;
   show_skills: boolean;
   show_projects: boolean;
   show_experiences: boolean;
@@ -25,6 +26,7 @@ export interface SiteSettings {
 
 export interface UpdateSiteSettingsInput {
   show_banners?: unknown;
+  show_about_me?: unknown;
   show_skills?: unknown;
   show_projects?: unknown;
   show_experiences?: unknown;
@@ -35,6 +37,7 @@ export interface UpdateSiteSettingsInput {
 const SELECT_COLUMNS = `
   id,
   show_banners,
+  show_about_me,
   show_skills,
   show_projects,
   show_experiences,
@@ -51,6 +54,7 @@ function mapRow(row: Record<string, unknown>): SiteSettings {
   return {
     id: Number(row.id),
     show_banners: Boolean(row.show_banners),
+    show_about_me: Boolean(row.show_about_me),
     show_skills: Boolean(row.show_skills),
     show_projects: Boolean(row.show_projects),
     show_experiences: Boolean(row.show_experiences),
@@ -130,6 +134,11 @@ export async function updateSiteSettings(
       "show_banners",
       current.show_banners
     ),
+    show_about_me: parseShowFlag(
+      input.show_about_me,
+      "show_about_me",
+      current.show_about_me
+    ),
     show_skills: parseShowFlag(
       input.show_skills,
       "show_skills",
@@ -161,15 +170,17 @@ export async function updateSiteSettings(
         UPDATE site_settings
         SET
           show_banners = $1,
-          show_skills = $2,
-          show_projects = $3,
-          show_experiences = $4,
-          show_education = $5
+          show_about_me = $2,
+          show_skills = $3,
+          show_projects = $4,
+          show_experiences = $5,
+          show_education = $6
         WHERE id = 1
         RETURNING ${SELECT_COLUMNS}
       `,
       [
         next.show_banners,
+        next.show_about_me,
         next.show_skills,
         next.show_projects,
         next.show_experiences,

@@ -9,6 +9,7 @@ export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
 
 const ALLOWED_FOLDERS = new Set([
   "home-banners",
+  "about-me",
   "skills",
   "projects",
   "experiences",
