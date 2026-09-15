@@ -719,6 +719,50 @@ VALUES (1)
 ON CONFLICT (id) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
+-- contact_me
+-- แถวเดียว (id = 1) — ข้อมูลติดต่อ section Contact Me บน landing
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS contact_me (
+  id               BIGINT PRIMARY KEY DEFAULT 1
+                     CHECK (id = 1),
+  name_th          VARCHAR(255) NOT NULL DEFAULT '',
+  name_en          VARCHAR(255) NOT NULL DEFAULT '',
+  phone            VARCHAR(50),
+  email            VARCHAR(255) NOT NULL DEFAULT '',
+  github_url       TEXT,
+  linkedin_url     TEXT,
+  facebook_url     TEXT,
+  instagram_url    TEXT,
+  is_active        BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE  contact_me IS 'ข้อมูลติดต่อ Contact Me บน personal website (singleton id=1)';
+COMMENT ON COLUMN contact_me.id IS 'PK — บังคับเป็น 1 เท่านั้น';
+COMMENT ON COLUMN contact_me.name_th IS 'ชื่อที่แสดงภาษาไทย';
+COMMENT ON COLUMN contact_me.name_en IS 'ชื่อที่แสดงภาษาอังกฤษ';
+COMMENT ON COLUMN contact_me.phone IS 'เบอร์โทร (nullable — ไม่บังคับโชว์บนเว็บ)';
+COMMENT ON COLUMN contact_me.email IS 'อีเมลติดต่อหลัก';
+COMMENT ON COLUMN contact_me.github_url IS 'ลิงก์ GitHub (nullable)';
+COMMENT ON COLUMN contact_me.linkedin_url IS 'ลิงก์ LinkedIn (nullable)';
+COMMENT ON COLUMN contact_me.facebook_url IS 'ลิงก์ Facebook (nullable)';
+COMMENT ON COLUMN contact_me.instagram_url IS 'ลิงก์ Instagram (nullable)';
+COMMENT ON COLUMN contact_me.is_active IS 'สถานะเปิดใช้งานเนื้อหาแถวนี้';
+COMMENT ON COLUMN contact_me.created_at IS 'เวลาสร้าง';
+COMMENT ON COLUMN contact_me.updated_at IS 'เวลาแก้ไขล่าสุด';
+
+DROP TRIGGER IF EXISTS contact_me_set_updated_at ON contact_me;
+CREATE TRIGGER contact_me_set_updated_at
+  BEFORE UPDATE ON contact_me
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+INSERT INTO contact_me (id)
+VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------------------------------------------------------------------------
 -- website_visits
 -- ยอดเข้าชม landing แบบรวมรายวัน (1 แถวต่อ 1 วัน)
 -- ---------------------------------------------------------------------------
@@ -761,6 +805,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
   show_projects      BOOLEAN      NOT NULL DEFAULT TRUE,
   show_experiences   BOOLEAN      NOT NULL DEFAULT TRUE,
   show_education     BOOLEAN      NOT NULL DEFAULT TRUE,
+  show_contact_me    BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -773,6 +818,7 @@ COMMENT ON COLUMN site_settings.show_skills IS 'โชว์ section Skills บ�
 COMMENT ON COLUMN site_settings.show_projects IS 'โชว์ section Projects บน landing';
 COMMENT ON COLUMN site_settings.show_experiences IS 'โชว์ section Experiences บน landing';
 COMMENT ON COLUMN site_settings.show_education IS 'โชว์ section Education บน landing';
+COMMENT ON COLUMN site_settings.show_contact_me IS 'โชว์ section Contact Me บน landing';
 COMMENT ON COLUMN site_settings.created_at IS 'เวลาสร้าง';
 COMMENT ON COLUMN site_settings.updated_at IS 'เวลาแก้ไขล่าสุด';
 

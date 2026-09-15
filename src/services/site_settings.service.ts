@@ -20,6 +20,7 @@ export interface SiteSettings {
   show_projects: boolean;
   show_experiences: boolean;
   show_education: boolean;
+  show_contact_me: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +32,7 @@ export interface UpdateSiteSettingsInput {
   show_projects?: unknown;
   show_experiences?: unknown;
   show_education?: unknown;
+  show_contact_me?: unknown;
   adminId?: number | null;
 }
 
@@ -42,6 +44,7 @@ const SELECT_COLUMNS = `
   show_projects,
   show_experiences,
   show_education,
+  show_contact_me,
   created_at,
   updated_at
 `;
@@ -59,6 +62,7 @@ function mapRow(row: Record<string, unknown>): SiteSettings {
     show_projects: Boolean(row.show_projects),
     show_experiences: Boolean(row.show_experiences),
     show_education: Boolean(row.show_education),
+    show_contact_me: Boolean(row.show_contact_me),
     created_at: toIsoTimestamp(row.created_at),
     updated_at: toIsoTimestamp(row.updated_at),
   };
@@ -159,6 +163,11 @@ export async function updateSiteSettings(
       "show_education",
       current.show_education
     ),
+    show_contact_me: parseShowFlag(
+      input.show_contact_me,
+      "show_contact_me",
+      current.show_contact_me
+    ),
   };
 
   const client = await pool.connect();
@@ -174,7 +183,8 @@ export async function updateSiteSettings(
           show_skills = $3,
           show_projects = $4,
           show_experiences = $5,
-          show_education = $6
+          show_education = $6,
+          show_contact_me = $7
         WHERE id = 1
         RETURNING ${SELECT_COLUMNS}
       `,
@@ -185,6 +195,7 @@ export async function updateSiteSettings(
         next.show_projects,
         next.show_experiences,
         next.show_education,
+        next.show_contact_me,
       ]
     );
 
